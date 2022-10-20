@@ -14,10 +14,15 @@ import (
 
 	"entgo.io/bug/ent"
 	"entgo.io/bug/ent/enttest"
+	"entgo.io/bug/ent/migrate"
 )
 
 func TestBugSQLite(t *testing.T) {
-	client := enttest.Open(t, dialect.SQLite, "file:ent?mode=memory&cache=shared&_fk=1")
+	opts := []enttest.Option{
+		enttest.WithOptions(ent.Log(t.Log)),
+		enttest.WithMigrateOptions(migrate.WithGlobalUniqueID(true)),
+	}
+	client := enttest.Open(t, dialect.SQLite, "file:ent?mode=memory&cache=shared&_fk=1", opts...)
 	defer client.Close()
 	test(t, client)
 }
@@ -56,9 +61,9 @@ func TestBugMaria(t *testing.T) {
 
 func test(t *testing.T, client *ent.Client) {
 	ctx := context.Background()
-	client.User.Delete().ExecX(ctx)
-	client.User.Create().SetName("Ariel").SetAge(30).ExecX(ctx)
-	if n := client.User.Query().CountX(ctx); n != 1 {
+	client.Hoge.Delete().ExecX(ctx)
+	client.Hoge.Create().SetName("Ariel").ExecX(ctx)
+	if n := client.Hoge.Query().CountX(ctx); n != 1 {
 		t.Errorf("unexpected number of users: %d", n)
 	}
 }

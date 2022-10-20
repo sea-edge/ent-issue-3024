@@ -8,23 +8,51 @@ import (
 )
 
 var (
-	// UsersColumns holds the columns for the "users" table.
-	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "age", Type: field.TypeInt},
-		{Name: "name", Type: field.TypeString},
+	// HogesColumns holds the columns for the "hoges" table.
+	HogesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString, Size: 50},
 	}
-	// UsersTable holds the schema information for the "users" table.
-	UsersTable = &schema.Table{
-		Name:       "users",
-		Columns:    UsersColumns,
-		PrimaryKey: []*schema.Column{UsersColumns[0]},
+	// HogesTable holds the schema information for the "hoges" table.
+	HogesTable = &schema.Table{
+		Name:       "hoges",
+		Columns:    HogesColumns,
+		PrimaryKey: []*schema.Column{HogesColumns[0]},
+	}
+	// HogeAdministratorsColumns holds the columns for the "hoge_administrators" table.
+	HogeAdministratorsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "first_name", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "last_name", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "email", Type: field.TypeString, Unique: true, Size: 255},
+		{Name: "is_active", Type: field.TypeBool, Default: false},
+		{Name: "hoge_id", Type: field.TypeString, Nullable: true},
+	}
+	// HogeAdministratorsTable holds the schema information for the "hoge_administrators" table.
+	HogeAdministratorsTable = &schema.Table{
+		Name:       "hoge_administrators",
+		Columns:    HogeAdministratorsColumns,
+		PrimaryKey: []*schema.Column{HogeAdministratorsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "hoge_administrators_hoges_hoge_administrators",
+				Columns:    []*schema.Column{HogeAdministratorsColumns[7]},
+				RefColumns: []*schema.Column{HogesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
-		UsersTable,
+		HogesTable,
+		HogeAdministratorsTable,
 	}
 )
 
 func init() {
+	HogeAdministratorsTable.ForeignKeys[0].RefTable = HogesTable
 }

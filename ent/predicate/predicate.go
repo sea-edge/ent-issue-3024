@@ -6,5 +6,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
-// User is the predicate function for user builders.
-type User func(*sql.Selector)
+// Hoge is the predicate function for hoge builders.
+type Hoge func(*sql.Selector)
+
+// HogeAdministrator is the predicate function for hogeadministrator builders.
+type HogeAdministrator func(*sql.Selector)

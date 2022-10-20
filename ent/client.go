@@ -9,11 +9,14 @@ import (
 	"log"
 
 	"entgo.io/bug/ent/migrate"
+	"entgo.io/bug/ulid"
 
-	"entgo.io/bug/ent/user"
+	"entgo.io/bug/ent/hoge"
+	"entgo.io/bug/ent/hogeadministrator"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -21,8 +24,10 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
-	// User is the client for interacting with the User builders.
-	User *UserClient
+	// Hoge is the client for interacting with the Hoge builders.
+	Hoge *HogeClient
+	// HogeAdministrator is the client for interacting with the HogeAdministrator builders.
+	HogeAdministrator *HogeAdministratorClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -36,7 +41,8 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
-	c.User = NewUserClient(c.config)
+	c.Hoge = NewHogeClient(c.config)
+	c.HogeAdministrator = NewHogeAdministratorClient(c.config)
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -68,9 +74,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		User:   NewUserClient(cfg),
+		ctx:               ctx,
+		config:            cfg,
+		Hoge:              NewHogeClient(cfg),
+		HogeAdministrator: NewHogeAdministratorClient(cfg),
 	}, nil
 }
 
@@ -88,16 +95,17 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		User:   NewUserClient(cfg),
+		ctx:               ctx,
+		config:            cfg,
+		Hoge:              NewHogeClient(cfg),
+		HogeAdministrator: NewHogeAdministratorClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		User.
+//		Hoge.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -119,87 +127,88 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.User.Use(hooks...)
+	c.Hoge.Use(hooks...)
+	c.HogeAdministrator.Use(hooks...)
 }
 
-// UserClient is a client for the User schema.
-type UserClient struct {
+// HogeClient is a client for the Hoge schema.
+type HogeClient struct {
 	config
 }
 
-// NewUserClient returns a client for the User from the given config.
-func NewUserClient(c config) *UserClient {
-	return &UserClient{config: c}
+// NewHogeClient returns a client for the Hoge from the given config.
+func NewHogeClient(c config) *HogeClient {
+	return &HogeClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `user.Hooks(f(g(h())))`.
-func (c *UserClient) Use(hooks ...Hook) {
-	c.hooks.User = append(c.hooks.User, hooks...)
+// A call to `Use(f, g, h)` equals to `hoge.Hooks(f(g(h())))`.
+func (c *HogeClient) Use(hooks ...Hook) {
+	c.hooks.Hoge = append(c.hooks.Hoge, hooks...)
 }
 
-// Create returns a builder for creating a User entity.
-func (c *UserClient) Create() *UserCreate {
-	mutation := newUserMutation(c.config, OpCreate)
-	return &UserCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Hoge entity.
+func (c *HogeClient) Create() *HogeCreate {
+	mutation := newHogeMutation(c.config, OpCreate)
+	return &HogeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of User entities.
-func (c *UserClient) CreateBulk(builders ...*UserCreate) *UserCreateBulk {
-	return &UserCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Hoge entities.
+func (c *HogeClient) CreateBulk(builders ...*HogeCreate) *HogeCreateBulk {
+	return &HogeCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for User.
-func (c *UserClient) Update() *UserUpdate {
-	mutation := newUserMutation(c.config, OpUpdate)
-	return &UserUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Hoge.
+func (c *HogeClient) Update() *HogeUpdate {
+	mutation := newHogeMutation(c.config, OpUpdate)
+	return &HogeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *UserClient) UpdateOne(u *User) *UserUpdateOne {
-	mutation := newUserMutation(c.config, OpUpdateOne, withUser(u))
-	return &UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *HogeClient) UpdateOne(h *Hoge) *HogeUpdateOne {
+	mutation := newHogeMutation(c.config, OpUpdateOne, withHoge(h))
+	return &HogeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *UserClient) UpdateOneID(id int) *UserUpdateOne {
-	mutation := newUserMutation(c.config, OpUpdateOne, withUserID(id))
-	return &UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *HogeClient) UpdateOneID(id ulid.ID) *HogeUpdateOne {
+	mutation := newHogeMutation(c.config, OpUpdateOne, withHogeID(id))
+	return &HogeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for User.
-func (c *UserClient) Delete() *UserDelete {
-	mutation := newUserMutation(c.config, OpDelete)
-	return &UserDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Hoge.
+func (c *HogeClient) Delete() *HogeDelete {
+	mutation := newHogeMutation(c.config, OpDelete)
+	return &HogeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *UserClient) DeleteOne(u *User) *UserDeleteOne {
-	return c.DeleteOneID(u.ID)
+func (c *HogeClient) DeleteOne(h *Hoge) *HogeDeleteOne {
+	return c.DeleteOneID(h.ID)
 }
 
 // DeleteOne returns a builder for deleting the given entity by its id.
-func (c *UserClient) DeleteOneID(id int) *UserDeleteOne {
-	builder := c.Delete().Where(user.ID(id))
+func (c *HogeClient) DeleteOneID(id ulid.ID) *HogeDeleteOne {
+	builder := c.Delete().Where(hoge.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &UserDeleteOne{builder}
+	return &HogeDeleteOne{builder}
 }
 
-// Query returns a query builder for User.
-func (c *UserClient) Query() *UserQuery {
-	return &UserQuery{
+// Query returns a query builder for Hoge.
+func (c *HogeClient) Query() *HogeQuery {
+	return &HogeQuery{
 		config: c.config,
 	}
 }
 
-// Get returns a User entity by its id.
-func (c *UserClient) Get(ctx context.Context, id int) (*User, error) {
-	return c.Query().Where(user.ID(id)).Only(ctx)
+// Get returns a Hoge entity by its id.
+func (c *HogeClient) Get(ctx context.Context, id ulid.ID) (*Hoge, error) {
+	return c.Query().Where(hoge.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *UserClient) GetX(ctx context.Context, id int) *User {
+func (c *HogeClient) GetX(ctx context.Context, id ulid.ID) *Hoge {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -207,7 +216,129 @@ func (c *UserClient) GetX(ctx context.Context, id int) *User {
 	return obj
 }
 
+// QueryHogeAdministrators queries the hoge_administrators edge of a Hoge.
+func (c *HogeClient) QueryHogeAdministrators(h *Hoge) *HogeAdministratorQuery {
+	query := &HogeAdministratorQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := h.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hoge.Table, hoge.FieldID, id),
+			sqlgraph.To(hogeadministrator.Table, hogeadministrator.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, hoge.HogeAdministratorsTable, hoge.HogeAdministratorsColumn),
+		)
+		fromV = sqlgraph.Neighbors(h.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
-func (c *UserClient) Hooks() []Hook {
-	return c.hooks.User
+func (c *HogeClient) Hooks() []Hook {
+	return c.hooks.Hoge
+}
+
+// HogeAdministratorClient is a client for the HogeAdministrator schema.
+type HogeAdministratorClient struct {
+	config
+}
+
+// NewHogeAdministratorClient returns a client for the HogeAdministrator from the given config.
+func NewHogeAdministratorClient(c config) *HogeAdministratorClient {
+	return &HogeAdministratorClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `hogeadministrator.Hooks(f(g(h())))`.
+func (c *HogeAdministratorClient) Use(hooks ...Hook) {
+	c.hooks.HogeAdministrator = append(c.hooks.HogeAdministrator, hooks...)
+}
+
+// Create returns a builder for creating a HogeAdministrator entity.
+func (c *HogeAdministratorClient) Create() *HogeAdministratorCreate {
+	mutation := newHogeAdministratorMutation(c.config, OpCreate)
+	return &HogeAdministratorCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of HogeAdministrator entities.
+func (c *HogeAdministratorClient) CreateBulk(builders ...*HogeAdministratorCreate) *HogeAdministratorCreateBulk {
+	return &HogeAdministratorCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for HogeAdministrator.
+func (c *HogeAdministratorClient) Update() *HogeAdministratorUpdate {
+	mutation := newHogeAdministratorMutation(c.config, OpUpdate)
+	return &HogeAdministratorUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *HogeAdministratorClient) UpdateOne(ha *HogeAdministrator) *HogeAdministratorUpdateOne {
+	mutation := newHogeAdministratorMutation(c.config, OpUpdateOne, withHogeAdministrator(ha))
+	return &HogeAdministratorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *HogeAdministratorClient) UpdateOneID(id ulid.ID) *HogeAdministratorUpdateOne {
+	mutation := newHogeAdministratorMutation(c.config, OpUpdateOne, withHogeAdministratorID(id))
+	return &HogeAdministratorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for HogeAdministrator.
+func (c *HogeAdministratorClient) Delete() *HogeAdministratorDelete {
+	mutation := newHogeAdministratorMutation(c.config, OpDelete)
+	return &HogeAdministratorDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *HogeAdministratorClient) DeleteOne(ha *HogeAdministrator) *HogeAdministratorDeleteOne {
+	return c.DeleteOneID(ha.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *HogeAdministratorClient) DeleteOneID(id ulid.ID) *HogeAdministratorDeleteOne {
+	builder := c.Delete().Where(hogeadministrator.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &HogeAdministratorDeleteOne{builder}
+}
+
+// Query returns a query builder for HogeAdministrator.
+func (c *HogeAdministratorClient) Query() *HogeAdministratorQuery {
+	return &HogeAdministratorQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a HogeAdministrator entity by its id.
+func (c *HogeAdministratorClient) Get(ctx context.Context, id ulid.ID) (*HogeAdministrator, error) {
+	return c.Query().Where(hogeadministrator.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *HogeAdministratorClient) GetX(ctx context.Context, id ulid.ID) *HogeAdministrator {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryHoge queries the hoge edge of a HogeAdministrator.
+func (c *HogeAdministratorClient) QueryHoge(ha *HogeAdministrator) *HogeQuery {
+	query := &HogeQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := ha.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hogeadministrator.Table, hogeadministrator.FieldID, id),
+			sqlgraph.To(hoge.Table, hoge.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, hogeadministrator.HogeTable, hogeadministrator.HogeColumn),
+		)
+		fromV = sqlgraph.Neighbors(ha.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *HogeAdministratorClient) Hooks() []Hook {
+	return c.hooks.HogeAdministrator
 }
